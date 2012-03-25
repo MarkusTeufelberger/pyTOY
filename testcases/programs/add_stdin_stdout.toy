@@ -1,0 +1,11 @@
+00: 0007
+01: 000C
+
+10: 8100 #ld R1, 0
+11: 8201 #ld R2, 1
+12: 1312 #add R3, R1, R2
+13: 9302 #st R3, 2
+14: 84FF #ld R4, FF (stdin)
+15: 94FF #st R4, FF (stdout)
+16: 93FF #st R3, FF (stdout)
+17: 0000 #hlt

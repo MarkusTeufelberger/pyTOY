@@ -10,37 +10,44 @@ import string
 
 #helper function for input filtering
 def ishex(s):
+  """Check if the input consists of hexadecimal digits"""
   for c in s:
     if not c in string.hexdigits: return False
   return True
 
-def initialize_memory(memory, register):
+def initialize_memory(memory, register, input):
   """Load the program into memory.
-  
-  Currently fixed values, in the future values should be loaded from a file.
-  """
 
-  memory[0x00] = 0x0007
-  memory[0x01] = 0x000C
-  
-  memory[0x10] = 0x8100 #ld R1, 0
-  memory[0x11] = 0x8201 #ld R2, 1
-  memory[0x12] = 0x1312 #add R3, R1, R2
-  memory[0x13] = 0x9302 #st R3, 2
-  memory[0x14] = 0x84FF #ld R4, FF (stdin)
-  memory[0x15] = 0x9403 #st R4, 3
-  memory[0x16] = 0x0000 #hlt
+  Expects input to be a list containing strings in the following format:
+  "memoryaddress: memorycontent\n"
+  Both address and content are in hex format, no leading "0x".
+  Memoryaddress is between 0x00 and 0xFF,
+  Memorycontent between 0x0000 and 0xFFFF
+  Comments can occur after memorycontent, it will simply parse until
+  4 hex-digits were found, leading 0s are important.
+  """
+  address = 0
+  content = 0
+  for item in input:
+    item = item.strip()
+    if not item:
+      continue
+    address = filter(ishex, item.split(": ")[0])
+    address = int("0x" + address[0:2], 16)
+    content = filter(ishex, item.split(": ")[1])
+    content = int("0x" + content[0:4], 16)
+    memory[address] = content
 
 def load_stdin(memory):
-  data = raw_input("Please enter up to 4 digits in hexadecimal format: 0x")
+  """Load a 4 digit hexadecimal number from stdin to memory[0xFF]"""
+  data = raw_input()
   data = filter(ishex, data)
-  number = int("0x" + data, 16)
-  number &= 0xFFFF #mask numbers higher than 0xFFFF, only 4 digit inputs
-  print "Input from stdin: {:04X}".format(number)
+  number = int("0x" + data[0:4], 16)
   memory[0xFF] = number
 
-def store_stdout(memory, register, d)
-  print "Output to stdout: {:04X}".format(register[d])
+def store_stdout(register, d):
+  """Write the contents of register[d] to stdout"""
+  print "{:04X}".format(register[d])
 
 #the 16 commands toy understands:
 #0 halt
@@ -84,7 +91,7 @@ def func_load(op,d,s,t,memory,register):
 def func_store(op,d,s,t,memory,register):
   #stores to FF go to stdout
   if s*16 + t == 0xFF:
-    store_stdout(memory, register, d)
+    store_stdout(register, d)
   memory[s*16 + t] = register[d]
 
 #A load indirect
@@ -97,7 +104,7 @@ def func_load_indirect(op,d,s,t,memory,register):
 #B store indirect
 def func_store_indirect(op,d,s,t,memory,register):
   if register[t] == 0xFF:
-    store_stdout(memory, register, d)
+    store_stdout(register, d)
   memory[register[t]] = register[d]
 
 #C branch zero
@@ -133,6 +140,14 @@ def show_memory(memory):
 def main(argv=None):
   if argv is None:
     argv = sys.argv
+  if len(argv) != 2:
+    print "Too many or too few arguments. Usage: toy.py toycode.toy"
+    return -1
+
+  input = []
+  with open(argv[1], "r") as inputfile:
+    input = inputfile.readlines()
+
   memory = {} #256 memory addresses, not enforced
   register = {} #16 registers, also not enforced
 
@@ -146,9 +161,9 @@ def main(argv=None):
   t = None
 
   #initialize
-  initialize_memory(memory, register)
-  print "Initial memory configuration:"
-  show_memory(memory)
+  initialize_memory(memory, register, input)
+  #print "Initial memory configuration:"
+  #show_memory(memory)
   while(1):
     #Fetch
     IR = memory[PC]
@@ -157,7 +172,7 @@ def main(argv=None):
     d = (IR >> 8) & 0xF
     s = (IR >> 4) & 0xF
     t = (IR >> 0) & 0xF
-    print "IR:{:02X}, PC:{:02X}, op:{:01X}, d:{:01X}, s:{:01X}, t:{:01X}".format(IR, PC, op, d, s, t)
+
     #Execute
 
     #register[0] is always 0!
@@ -200,8 +215,8 @@ def main(argv=None):
       print "Error: Unknown opcode ({}), aborting!".format(op)
       return -1
 
-  print "Final memory configuration:"
-  show_memory(memory)
+  #print "Final memory configuration:"
+  #show_memory(memory)
   return 0
 
 #Run main() if this script is invoked directly.
