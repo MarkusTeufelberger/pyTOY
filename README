@@ -1,0 +1,6 @@
+Implementation of "TOY" (see http://introcs.cs.princeton.edu/xtoy/) in Python(2)
+Inspired by "spielzeug_computer_1.c" by Prof. KC Posch, TU Graz
+Written by Markus Teufelberger (markus.teufelberger@student.tugraz.at)
+
+All rights reserved, for educational use only, use at your own risk,
+no warranties, this program might kill your hamster or worse!
